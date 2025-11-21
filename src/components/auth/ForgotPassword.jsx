@@ -7,7 +7,7 @@ function ForgotPassword() {
       <div className="mx-auto w-full max-w-[550px] bg-white p-8 rounded-xl shadow-lg">
         <img
           alt="FinanceFlow"
-          src="/finance-flow-logo-gradient.svg?color=indigo&size=256"
+          src="/src/assets/images/finance-flow-logo-gradient.svg?color=indigo&size=256"
           className="mx-auto h-28 w-auto hover:drop-shadow-[0_0_10px_theme(colors.emerald.400)] transition-all duration-300;"
         />
 

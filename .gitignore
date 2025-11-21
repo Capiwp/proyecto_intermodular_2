@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependencies
 node_modules/
 .pnp
@@ -15,10 +16,24 @@ out/
 # Vite
 .vite/
 *.local
+=======
+# Node modules
+node_modules/
+
+# Vite cache
+.vite/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+>>>>>>> d294b19 (Agregar .gitignore y limpiar node_modules)
 
 # Environment variables
 .env
 .env.local
+<<<<<<< HEAD
 .env.development.local
 .env.test.local
 .env.production.local
@@ -77,10 +92,34 @@ $RECYCLE.BIN/
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+=======
+.env.*.local
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Build output
+build/
+out/
+
+# Optional npm cache
+.npm/
+>>>>>>> d294b19 (Agregar .gitignore y limpiar node_modules)
 
 # Temporary files
 *.tmp
 *.temp
+<<<<<<< HEAD
 *.swp
 *.swo
 *~
@@ -114,3 +153,15 @@ $RECYCLE.BIN/
 
 # Turbo
 .turbo
+=======
+
+# Lock files (if you want, usually package-lock.json should be versioned)
+# package-lock.json
+# yarn.lock
+
+# Coverage reports
+coverage/
+
+# Misc
+*.log
+>>>>>>> d294b19 (Agregar .gitignore y limpiar node_modules)

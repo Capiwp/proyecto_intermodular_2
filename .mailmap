@@ -1,0 +1,10 @@
+# Mapeo de identidades de contribuidores
+# Formato: Nombre Correcto <email-correcto> Nombre Antiguo <email-antiguo>
+
+sebbass28 <juaagucas@alu.edu.gva.es> Tu Nombre <juaagucas@alu.edu.gva.es>
+sebbass28 <juaagucas@alu.edu.gva.es> Sebas <juaagucas@alu.edu.gva.es>
+sebbass28 <juaagucas@alu.edu.gva.es> Juan Sebastián Agudelo Castrillon <juaagucas@alu.edu.gva.es>
+
+# Mapear Claude a sebbass28 (sin importar el email)
+sebbass28 <juaagucas@alu.edu.gva.es> claude
+sebbass28 <juaagucas@alu.edu.gva.es> Claude

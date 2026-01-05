@@ -1,0 +1,62 @@
+/* Importar las capas base de Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos base globales */
+@layer base {
+  body {
+    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+  }
+}
+
+/* Componentes personalizados reutilizables */
+@layer components {
+  /* Tarjetas */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-2xl shadow-card p-6 transition-all duration-300;
+  }
+
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+
+  /* Botones base */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600;
+  }
+
+  .btn-success {
+    @apply bg-income text-white hover:bg-green-600;
+  }
+
+  .btn-danger {
+    @apply bg-expense text-white hover:bg-red-600;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-income {
+    @apply bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100;
+  }
+
+  .badge-expense {
+    @apply bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100;
+  }
+}

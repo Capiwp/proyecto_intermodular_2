@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Tag, Trash2, Edit2, TrendingUp } from 'lucide-react';
-import api from '../../api/api';
+import { Plus, Tag, Trash2, Edit2 } from 'lucide-react';
+import api from '../../api/api'; // Verifica que esta ruta sea correcta
 
 export default function BudgetsView() {
   const [categories, setCategories] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Estado del formulario: Solo name y color (lo que hay en tu SQL)
-  const [formData, setFormData] = useState({
-    name: '',
-    color: '#10B981',
-  });
+  const [formData, setFormData] = useState({ name: '', color: '#10B981' });
 
   useEffect(() => {
     loadCategories();
@@ -21,11 +15,10 @@ export default function BudgetsView() {
   const loadCategories = async () => {
     try {
       setLoading(true);
-      // Usamos el endpoint que coincide con tu tabla SQL
       const response = await api.get('/categories');
       setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error('Error cargando categorías:', error);
+      console.error('Error:', error);
       setCategories([]);
     } finally {
       setLoading(false);
@@ -34,136 +27,84 @@ export default function BudgetsView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Evitar envíos vacíos
     if (!formData.name.trim()) return;
 
     try {
-      const data = {
+      // Enviamos a /categories porque así está en tu SQL
+      await api.post('/categories', {
         name: formData.name.trim(),
         color: formData.color
-      };
+      });
 
-      if (editingCategory) {
-        await api.put(`/categories/${editingCategory.id}`, data);
-      } else {
-        await api.post('/categories', data);
-      }
-
-      // IMPORTANTE: Limpiar estado y CERRAR antes de recargar para que el usuario vea acción
       setFormData({ name: '', color: '#10B981' });
       setIsDialogOpen(false);
-      setEditingCategory(null);
-      
-      // Recargar la lista del servidor
-      await loadCategories();
-
+      await loadCategories(); // Recarga la lista
     } catch (error) {
-      console.error('Error al guardar:', error);
-      alert('Error al guardar la categoría. Revisa si el endpoint /categories es correcto.');
+      console.error('Error al crear:', error);
+      alert('Error: No se pudo conectar con el Backend. Revisa la carpeta con flecha.');
     }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este post-it?')) return;
-    try {
-      await api.delete(`/categories/${id}`);
-      await loadCategories();
-    } catch (error) {
-      console.error('Error al eliminar:', error);
-    }
-  };
-
-  const openEdit = (cat) => {
-    setEditingCategory(cat);
-    setFormData({ name: cat.name, color: cat.color });
-    setIsDialogOpen(true);
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900">Gestión de Post-its</h1>
-          <p className="text-gray-500 font-medium text-sm">Organiza tu dinero por etiquetas de colores</p>
-        </div>
-        <button
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-10">
+        <h1 className="text-3xl font-black text-gray-900">MIS POST-ITS</h1>
+        <button 
           onClick={() => setIsDialogOpen(true)}
-          className="bg-black text-white px-6 py-3 rounded-2xl hover:scale-105 transition-all shadow-lg flex items-center gap-2 font-bold"
+          className="bg-black text-white px-6 py-2 rounded-xl font-bold shadow-lg"
         >
-          <Plus className="w-5 h-5" /> Nueva Etiqueta
+          + NUEVA NOTA
         </button>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20 animate-pulse text-gray-400 font-bold uppercase tracking-widest">
-          Leyendo base de datos...
-        </div>
-      ) : categories.length === 0 ? (
-        <div className="text-center py-20 bg-gray-50 rounded-[2rem] border-4 border-dashed border-gray-100">
-          <p className="text-gray-400 font-bold">Aún no hay post-its creados</p>
-        </div>
+        <div className="text-center py-20 animate-pulse font-bold text-gray-400">CONECTANDO...</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className="aspect-square p-6 rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all transform hover:-rotate-1 border-t-[10px] flex flex-col justify-between"
-              style={{ backgroundColor: `${cat.color}15`, borderTopColor: cat.color }}
+            <div 
+              key={cat.id} 
+              className="aspect-square p-6 rounded-[2rem] shadow-xl flex flex-col justify-between transform -rotate-1 hover:rotate-0 transition-all border-b-8"
+              style={{ backgroundColor: `${cat.color}20`, borderBottomColor: cat.color }}
             >
-              <div className="flex justify-between items-start">
-                <div className="p-3 rounded-2xl shadow-sm" style={{ backgroundColor: cat.color }}>
-                  <Tag className="w-5 h-5 text-white" />
+              <div className="flex justify-between">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: cat.color }}>
+                  <Tag className="text-white w-5 h-5" />
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => openEdit(cat)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-blue-500 transition-colors">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(cat.id)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-red-500 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                <button 
+                  onClick={async () => { if(confirm('¿Borrar?')) { await api.delete(`/categories/${cat.id}`); loadCategories(); } }}
+                  className="text-red-500 p-2 hover:bg-white rounded-lg"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
-              <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tighter leading-tight break-words">
-                {cat.name}
-              </h3>
+              <h2 className="text-xl font-black text-gray-800 uppercase break-words">{cat.name}</h2>
             </div>
           ))}
         </div>
       )}
 
-      {/* Modal de Creación */}
+      {/* Modal */}
       {isDialogOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full shadow-2xl">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 tracking-tight">
-              {editingCategory ? 'Editar Etiqueta' : 'Crear Post-it'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nombre</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ej: ALQUILER"
-                  className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-emerald-500 font-bold"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Color de Fondo</label>
-                <input
-                  type="color"
-                  value={formData.color}
-                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  className="w-full h-16 p-1 bg-white border-2 border-gray-100 rounded-2xl cursor-pointer"
-                />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setIsDialogOpen(false)} className="flex-1 py-4 font-bold text-gray-400 hover:text-gray-600">CANCELAR</button>
-                <button type="submit" className="flex-1 py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg shadow-emerald-100 uppercase text-xs tracking-widest">GUARDAR</button>
-              </div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl">
+            <h2 className="text-2xl font-black mb-6">NUEVA CATEGORÍA</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input 
+                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-xl font-bold"
+                placeholder="NOMBRE"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                required 
+              />
+              <input 
+                type="color" 
+                className="w-full h-16 rounded-xl cursor-pointer" 
+                value={formData.color}
+                onChange={(e) => setFormData({...formData, color: e.target.value})}
+              />
+              <button type="submit" className="w-full bg-emerald-500 text-white p-4 rounded-xl font-black uppercase">Crear Post-it</button>
+              <button type="button" onClick={() => setIsDialogOpen(false)} className="w-full text-gray-400 font-bold">Cerrar</button>
             </form>
           </div>
         </div>

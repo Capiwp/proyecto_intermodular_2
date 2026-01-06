@@ -1,204 +1,168 @@
 import { useState, useEffect } from 'react';
-import { Plus, Tag, Trash2, Edit2, Palette } from 'lucide-react';
+import { TrendingUp, TrendingDown, PieChart as PieIcon, BarChart3, Calendar } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import api from '../../api/api';
 
 const TransactionsView = () => {
-  const [tags, setTags] = useState([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTag, setEditingTag] = useState(null);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    color: '#10B981', // Emerald-500 por defecto
-    description: ''
-  });
+  const [stats, setStats] = useState({ totalIncome: 0, totalExpense: 0, balance: 0 });
 
   useEffect(() => {
-    loadTags();
+    loadTransactions();
   }, []);
 
-  const loadTags = async () => {
+  const loadTransactions = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/tags'); // Asumiendo que existe el endpoint /tags
-      setTags(Array.isArray(response.data) ? response.data : []);
+      // Cambiamos el endpoint a /transactions para obtener movimientos reales
+      const response = await api.get('/transactions');
+      const transactions = Array.isArray(response.data) ? response.data : [];
+      
+      setData(transactions);
+      calculateStats(transactions);
     } catch (error) {
-      console.error('Error cargando etiquetas:', error);
-      setTags([]);
+      console.error('Error cargando transacciones:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.name) return alert('El nombre es obligatorio');
-
-    try {
-      if (editingTag) {
-        await api.put(`/tags/${editingTag.id}`, formData);
-      } else {
-        await api.post('/tags', formData);
-      }
-      loadTags();
-      closeDialog();
-    } catch (error) {
-      console.error('Error guardando etiqueta:', error);
-      alert('Error al procesar la etiqueta');
-    }
-  };
-
-  const handleEdit = (tag) => {
-    setEditingTag(tag);
-    setFormData({
-      name: tag.name,
-      color: tag.color,
-      description: tag.description || ''
+  const calculateStats = (transactions) => {
+    const income = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0);
+    setStats({
+      totalIncome: income,
+      totalExpense: expense,
+      balance: income - expense
     });
-    setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar esta etiqueta? Los movimientos asociados podrían quedar sin categoría.')) return;
-    try {
-      await api.delete(`/tags/${id}`);
-      loadTags();
-    } catch (error) {
-      console.error('Error eliminando etiqueta:', error);
+  // Preparar datos para Gráfico de Pastel (Por Categoría)
+  const chartDataPie = data.reduce((acc, curr) => {
+    const existing = acc.find(item => item.name === curr.category);
+    if (existing) {
+      existing.value += Number(curr.amount);
+    } else {
+      acc.push({ name: curr.category || 'Otros', value: Number(curr.amount), color: curr.color || '#94a3b8' });
     }
-  };
+    return acc;
+  }, []);
 
-  const closeDialog = () => {
-    setIsDialogOpen(false);
-    setEditingTag(null);
-    setFormData({ name: '', color: '#10B981', description: '' });
-  };
+  if (loading) return <div className="p-8 text-center font-bold animate-pulse">GENERANDO GRÁFICAS...</div>;
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2 text-gray-900">Gestión de Etiquetas</h1>
-          <p className="text-gray-600">Organiza tus gastos e ingresos con categorías personalizadas</p>
-        </div>
-        <button
-          onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva Etiqueta
-        </button>
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="mb-8">
+        <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Análisis de Gastos</h1>
+        <p className="text-gray-500 font-medium">Visualización detallada de tus movimientos financieros</p>
       </div>
 
-      {/* Tags Grid */}
-      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-        <div className="flex items-center gap-2 mb-6 border-b pb-4">
-          <Tag className="w-5 h-5 text-emerald-500" />
-          <h2 className="text-xl font-bold text-gray-800">Mis Categorías</h2>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          </div>
-        ) : tags.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-            <Tag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No hay etiquetas creadas. Comienza a organizar tu dinero.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tags.map((tag) => (
-              <div 
-                key={tag.id}
-                className="group relative flex items-center justify-between p-4 rounded-lg border transition-all hover:shadow-md"
-                style={{ borderLeft: `6px solid ${tag.color}` }}
-              >
-                <div>
-                  <h3 className="font-semibold text-gray-800">{tag.name}</h3>
-                  <p className="text-xs text-gray-500 line-clamp-1">{tag.description || 'Sin descripción'}</p>
-                </div>
-                
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleEdit(tag)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(tag.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Create/Edit Dialog */}
-      {isDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <div className="flex items-center gap-2 mb-4">
-              <Palette className="w-5 h-5 text-emerald-500" />
-              <h2 className="text-2xl font-bold">{editingTag ? 'Editar Etiqueta' : 'Nueva Etiqueta'}</h2>
+      {/* Tarjetas de Resumen */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-emerald-500">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-100 rounded-2xl text-emerald-600"><TrendingUp /></div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase">Ingresos Totales</p>
+              <p className="text-2xl font-black text-emerald-600">+{stats.totalIncome}€</p>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de Categoría</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="ej: Alimentación, Ocio, Alquiler"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Color Identificador</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="color"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-16 h-10 p-1 rounded border cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-500 uppercase font-mono">{formData.color}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (Opcional)</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                  rows="2"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeDialog}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
-                >
-                  {editingTag ? 'Actualizar' : 'Guardar'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
-      )}
+
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-red-500">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-100 rounded-2xl text-red-600"><TrendingDown /></div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase">Gastos Totales</p>
+              <p className="text-2xl font-black text-red-600">-{stats.totalExpense}€</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-black">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gray-100 rounded-2xl text-black"><PieIcon /></div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase">Balance Neto</p>
+              <p className="text-2xl font-black text-gray-900">{stats.balance}€</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Gráfico de Distribución (Pie) */}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl">
+          <div className="flex items-center gap-2 mb-6">
+            <PieIcon className="text-emerald-500" />
+            <h2 className="text-xl font-black uppercase tracking-tight">Distribución por Categoría</h2>
+          </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartDataPie}
+                  innerRadius={80}
+                  outerRadius={110}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {chartDataPie.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" height={36}/>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Gráfico de Barras (Histórico) */}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl">
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart3 className="text-blue-500" />
+            <h2 className="text-xl font-black uppercase tracking-tight">Comparativa Mensual</h2>
+          </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.slice(-5)}> {/* Muestra las últimas 5 transacciones */}
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" hide />
+                <YAxis />
+                <Tooltip cursor={{fill: '#f3f4f6'}} />
+                <Bar dataKey="amount" radius={[10, 10, 0, 0]}>
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.type === 'income' ? '#10b981' : '#ef4444'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista Reciente Estilizada */}
+      <div className="mt-8 bg-white p-8 rounded-[2.5rem] shadow-sm">
+        <div className="flex items-center gap-2 mb-6 border-b pb-4">
+          <Calendar className="text-gray-400" />
+          <h2 className="text-xl font-black uppercase">Últimos Movimientos</h2>
+        </div>
+        <div className="space-y-4">
+          {data.slice(0, 5).map((t) => (
+            <div key={t.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border-l-8" style={{borderColor: t.color}}>
+              <div>
+                <p className="font-black text-gray-800 uppercase">{t.name}</p>
+                <p className="text-xs text-gray-400 font-bold uppercase">{t.category}</p>
+              </div>
+              <p className={`text-lg font-black ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
+                {t.type === 'income' ? '+' : '-'}{t.amount}€
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
